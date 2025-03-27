@@ -1,11 +1,21 @@
+# backend/app/schemas.py
 from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
 from typing import List, Optional
 from .models import LinkStatus # Import the enum
 
+# --- Request Schemas ---
+
 # Schema for validating the incoming URL shortening request body
 class URLCreateRequest(BaseModel):
     url: HttpUrl # Pydantic automatically validates if it's a valid HTTP/HTTPS URL
+
+# Schema for updating the status of a link
+class URLStatusUpdateRequest(BaseModel):
+    status: LinkStatus # The desired new status (Active or Inactive)
+
+
+# --- Response Schemas ---
 
 # Base schema for URL mapping data, used for inheritance
 class URLMappingBase(BaseModel):
@@ -25,6 +35,7 @@ class URLShortenResponse(URLMappingBase):
         from_attributes = True # Replaces orm_mode=True in Pydantic V2
 
 # Schema used when retrieving details of a single link (can reuse URLShortenResponse)
+# This is also used for the status update response
 class URLMappingInfo(URLShortenResponse):
     pass
 

@@ -1,13 +1,13 @@
 services:
   frontend:
+    # ... (frontend config remains the same) ...
     build:
       context: ./frontend
       args:
-        # Pass API base URL relative path for Nginx proxy
         VITE_API_BASE_URL: /api
     container_name: linkly_frontend
     ports:
-      - "3000:80" # Expose Nginx on host port 3000
+      - "3000:80"
     depends_on:
       - backend
     networks:
@@ -15,28 +15,34 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend # This will run tests during the build stage
+    build: ./backend
     container_name: linkly_backend
     env_file:
-      - .env # Load environment variables from .env file
+      - .env
     environment:
-      # Construct DB URL using service name 'db' and .env variables
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      REDIS_HOST: cache # Use service name from docker-compose
-      REDIS_PORT: ${REDIS_PORT:-6379} # Use env var or default
-      # Add other backend-specific env vars if needed
+      REDIS_HOST: cache
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      DEFAULT_CACHE_TTL_SECONDS: 3600
+      # Base URL for generating short clickable links (used by backend AND frontend redirects)
+      DEV_PUBLIC_URL: http://localhost:3000
+      # --- ADD THIS ---
+      # Base URL of the frontend app itself (for redirecting inactive links)
+      FRONTEND_BASE_URL: ${DEV_PUBLIC_URL:-http://localhost:3000}
+      # ----------------
     ports:
-      - "8000:8000" # Expose backend API directly on host port 8000 (useful for dev/testing)
+      - "8000:8000"
     depends_on:
       db:
-        condition: service_healthy # Wait for DB to be ready
+        condition: service_healthy
       cache:
-        condition: service_started # Redis starts quickly
+        condition: service_started
     networks:
       - linkly_net
     restart: unless-stopped
 
   db:
+    # ... (db config remains the same) ...
     image: postgres:15-alpine
     container_name: linkly_db
     environment:
@@ -55,16 +61,23 @@ services:
     restart: unless-stopped
 
   cache:
+    # ... (cache config remains the same) ...
     image: redis:7-alpine
     container_name: linkly_cache
+    volumes:
+      - redis_data:/data
     networks:
       - linkly_net
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:
   postgres_data:
-    driver: local # Persist DB data on the host machine
+    driver: local
+  redis_data:
+    driver: local
 
 networks:
   linkly_net:
-    driver: bridge # Default docker network driver
+    driver: bridge

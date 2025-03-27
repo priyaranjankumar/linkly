@@ -27,7 +27,7 @@ COPY ./tests ./tests
 # --- Run Tests ---
 # Set PYTHONPATH to include the current directory (.) so 'from app...' works
 # This command will run pytest. If tests fail, the docker build will stop.
-RUN PYTHONPATH=. pytest tests
+RUN PYTHONPATH=. TESTING=true pytest tests
 
 # If tests pass, builder stage is complete
 
