@@ -29,11 +29,25 @@ RUN npm run build
 # Stage 2: Serve the application with Nginx (production stage)
 FROM nginx:1.25-alpine
 
+# Add non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 # Copy built assets from the 'dist' directory of the builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy custom Nginx configuration file into the container
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Create temporary directories and a custom Nginx configuration
+RUN mkdir -p /tmp/nginx && \
+    chown -R appuser:appgroup /tmp/nginx /var/cache/nginx /var/log/nginx /usr/share/nginx/html /etc/nginx && \
+    # Create a custom main nginx.conf that uses a PID file in /tmp
+    echo 'pid /tmp/nginx/nginx.pid;' > /etc/nginx/nginx.conf && \
+    echo 'events { worker_connections 1024; }' >> /etc/nginx/nginx.conf && \
+    echo 'http { include /etc/nginx/conf.d/*.conf; include /etc/nginx/mime.types; }' >> /etc/nginx/nginx.conf
+
+# Switch to non-root user
+USER appuser
 
 # Expose port 80 (standard HTTP port Nginx listens on)
 EXPOSE 80

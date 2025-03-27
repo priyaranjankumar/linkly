@@ -34,10 +34,10 @@ Linkly is a modern, full-stack URL shortener application that provides a simple 
 Linkly follows a modern microservices architecture:
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+┌─────────────┐      ┌─────────────┐     ┌─────────────┐
 │   Frontend  │────▶│   Backend   │────▶│  Database   │
-│    React    │     │   FastAPI   │     │ PostgreSQL  │
-└─────────────┘     └─────────────┘     └─────────────┘
+│    React    │      │   FastAPI   │     │ PostgreSQL  │
+└─────────────┘      └─────────────┘     └─────────────┘
                           │
                           ▼
                     ┌─────────────┐
