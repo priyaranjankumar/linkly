@@ -1,127 +1,49 @@
-# Linkly - Modern URL Shortener
+# Linkly - URL Shortener
 
-<div align="center">
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.1xx-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://www.docker.com/)
 
-![Linkly Logo](https://img.shields.io/badge/Linkly-URL%20Shortener-blue?style=for-the-badge&logo=link&logoColor=white)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
-[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-
-</div>
-
-Linkly is a modern, full-stack URL shortener application that provides a simple way to create shortened links with powerful tracking and management capabilities. Built with FastAPI and React, it offers a clean, responsive interface with real-time feedback and performance-optimized backend operations.
+A full-stack URL shortening service built with FastAPI (Python) for the backend and React (JavaScript) for the frontend, containerized using Docker Compose. Includes features like link history, click counts, QR codes, Redis caching, and active/inactive link status management.
 
 ## ✨ Features
 
-- **Instant URL Shortening**: Transform long URLs into concise, shareable links
-- **QR Code Generation**: Automatically generate scannable QR codes for each shortened URL
-- **Click Tracking**: Monitor engagement with detailed visit counts
-- **Link Management**: Toggle link status between active and inactive
-- **Performance Optimized**:
-  - Redis caching for high-speed redirects
-  - PostgreSQL for reliable data persistence
-  - Efficient base62 encoding algorithm
-- **Responsive UI**: Clean, mobile-friendly interface built with React and TailwindCSS
-- **Dockerized**: Easy deployment with Docker Compose
-- **Production Ready**: Includes error handling, logging, and comprehensive testing
+*   **URL Shortening:** Convert long URLs into compact short links.
+*   **Redirection:** Short links redirect users to the original URL.
+*   **Link History:** View a table of previously shortened links.
+*   **QR Code Generation:** Automatically generates a QR code for each short link.
+*   **Click Tracking:** Counts how many times each short link is visited.
+*   **Link Status Management:**
+    *   Activate or deactivate links directly from the history table UI.
+    *   Inactive links will not redirect to the original URL.
+*   **Inactive Link Handling:** Clicking an inactive short link redirects the user to an informative page on the frontend.
+*   **Caching:** Utilizes Redis to cache redirects for faster performance.
+*   **Dockerized:** Easy setup and deployment using Docker and Docker Compose.
+*   **API Documentation:** Interactive API docs available via Swagger UI (`/api/docs`).
 
-## 🏗️ Architecture
+## 💻 Technology Stack
 
-Linkly follows a modern microservices architecture:
-
-```
-┌─────────────┐      ┌─────────────┐     ┌─────────────┐
-│   Frontend  │────▶│   Backend   │────▶│  Database   │
-│    React    │      │   FastAPI   │     │ PostgreSQL  │
-└─────────────┘      └─────────────┘     └─────────────┘
-                          │
-                          ▼
-                    ┌─────────────┐
-                    │    Cache    │
-                    │    Redis    │
-                    └─────────────┘
-```
-
-- **Frontend**: React application served via Nginx
-- **Backend**: FastAPI application with SQLAlchemy ORM
-- **Database**: PostgreSQL for persistent storage
-- **Cache**: Redis for high-speed redirects and reduced database load
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
-- Git
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/linkly.git
-cd linkly
-```
-
-2. Create an `.env` file in the root directory:
-
-```env
-# PostgreSQL Configuration
-POSTGRES_DB=linklydb
-POSTGRES_USER=linklyuser
-POSTGRES_PASSWORD=your_secure_password
-
-# Redis Configuration
-REDIS_HOST=cache
-REDIS_PORT=6379
-
-# Backend Configuration
-DEV_PUBLIC_URL=http://localhost:3000
-```
-
-3. Start the application:
-
-```bash
-docker-compose up -d
-```
-
-4. Access the application:
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-## 📋 Usage
-
-### Shortening a URL
-
-1. Enter a valid URL in the input field
-2. Click "Shorten Now!"
-3. Copy the generated short link or scan the QR code
-
-### Managing Links
-
-The history table displays all your shortened URLs with:
-
-- Short link
-- Original URL
-- QR code
-- Click count
-- Status (Active/Inactive)
-- Creation date
-
-You can click on the status button to toggle a link between active and inactive.
-
-## 🔌 API Endpoints
-
-| Endpoint        | Method | Description                 |
-| --------------- | ------ | --------------------------- |
-| `/api/shorten`  | POST   | Create a shortened URL      |
-| `/api/links`    | GET    | Retrieve all shortened URLs |
-| `/{short_code}` | GET    | Redirect to original URL    |
-| `/api/health`   | GET    | Check API health status     |
+*   **Backend:**
+    *   FastAPI (Python 3.11)
+    *   SQLAlchemy (ORM) with PostgreSQL adapter (`psycopg2-binary`)
+    *   Pydantic (Data Validation)
+    *   Uvicorn (ASGI Server)
+    *   Redis (`redis-py`) (Caching)
+    *   Pytest (Testing)
+*   **Frontend:**
+    *   React 18
+    *   Vite (Build Tool)
+    *   JavaScript
+    *   Tailwind CSS (Styling)
+    *   Axios (HTTP Client)
+    *   `react-router-dom` (Routing)
+    *   `qrcode.react` (QR Code Component)
+    *   Vitest (Testing)
+*   **Database:** PostgreSQL
+*   **Cache:** Redis
+*   **Web Server/Proxy:** Nginx (serving frontend static files and proxying API/redirects)
+*   **Containerization:** Docker, Docker Compose
 
 ## 📁 Project Structure
 
@@ -146,123 +68,129 @@ linkly/
 │   ├── src/                # React source code
 │   │   ├── components/     # UI components
 │   │   │   ├── Header.jsx
-│   │   │   ├── LinkHistoryRow.jsx
+│   │   │   ├── InactiveLinkPage.jsx # Page for inactive links
+│   │   │   ├── LinkHistoryRow.jsx   # Includes toggle button
 │   │   │   ├── LinkHistoryTable.jsx
 │   │   │   └── UrlShortenerForm.jsx
-│   │   ├── App.jsx         # Main application component
+│   │   ├── App.jsx         # Main application component with Routing
 │   │   ├── App.test.jsx    # Component tests
 │   │   ├── index.css       # Global styles (Tailwind)
-│   │   └── main.jsx        # Application entry point
+│   │   └── main.jsx        # Application entry point with Router
 │   ├── Dockerfile          # Frontend container config
 │   ├── index.html          # HTML template
-│   ├── nginx.conf          # Nginx configuration
+│   ├── nginx.conf          # Nginx configuration (updated)
 │   ├── package.json        # npm dependencies
 │   ├── tailwind.config.js  # Tailwind CSS config
 │   └── vite.config.js      # Vite bundler config
 │
-├── .env                    # Environment variables
-├── docker-compose.yml      # Services orchestration
-└── README.md               # Project documentation
+├── .env                    # Environment variables (DATABASE CREDS HERE)
+├── docker-compose.yml      # Services orchestration (updated)
+└── README.md               # Project documentation (This file)
 ```
 
-## ⚙️ Development
+## 🚀 Setup and Running
 
-### Running in Development Mode
+**Prerequisites:**
 
-For local development without Docker:
+*   Docker Desktop (or Docker Engine + Docker Compose) installed.
+*   Git (to clone the repository).
 
-#### Backend
+**Steps:**
 
-```bash
-cd backend
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+1.  **Clone the Repository:**
+    ```bash
+    git clone <your-repository-url>
+    cd linkly
+    ```
 
-#### Frontend
+2.  **Create Environment File:**
+    Create a `.env` file in the project's root directory (`linkly/`). Copy the contents from the example below and **replace the placeholder values** with your desired database credentials.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+    ```dotenv
+    # .env (in project root)
 
-### Testing
+    # PostgreSQL Credentials - REQUIRED
+    POSTGRES_USER=your_db_user       # Replace with your desired username
+    POSTGRES_PASSWORD=your_db_password # Replace with a strong password
+    POSTGRES_DB=linklydb           # Replace with your desired database name
 
-#### Backend Tests
+    # Optional: Specify Redis port if not default 6379
+    # REDIS_PORT=6379
+    ```
+    *Note: Other variables like `DEV_PUBLIC_URL` and `FRONTEND_BASE_URL` are now set directly in `docker-compose.yml` for convenience in local development.*
 
-```bash
-cd backend
-pytest
-```
+3.  **Build and Run Services:**
+    Open a terminal in the project's root directory (`linkly/`) and run:
+    ```bash
+    # Build images (runs tests) and start containers in detached mode
+    # Use --no-cache for the very first build or after major changes
+    docker compose build --no-cache
+    docker compose up -d
+    ```
+    This command will:
+    *   Build the Docker images for the `frontend` and `backend` services (running tests during the build process).
+    *   Pull the official images for `postgres` and `redis`.
+    *   Create and start containers for all services defined in `docker-compose.yml`.
+    *   Create the necessary Docker network and volumes.
 
-#### Frontend Tests
+4.  **Access the Application:**
+    *   **Frontend:** Open your web browser and navigate to `http://localhost:3000`.
+    *   **Backend API Docs (Swagger UI):** Navigate to `http://localhost:8000/api/docs`.
 
-```bash
-cd frontend
-npm test
-```
+5.  **Stopping the Application:**
+    To stop and remove the containers, network, and volumes (optional for volumes), run:
+    ```bash
+    docker compose down
+    # Add -v to remove volumes (database/cache data will be lost)
+    # docker compose down -v
+    ```
 
-## 🔍 How It Works
+## ⚙️ Environment Variables
 
-1. **URL Shortening Process**:
+*   **`.env` File (Required):**
+    *   `POSTGRES_USER`: Username for the PostgreSQL database.
+    *   `POSTGRES_PASSWORD`: Password for the PostgreSQL user.
+    *   `POSTGRES_DB`: Name of the PostgreSQL database to use.
+*   **`docker-compose.yml` (Set Directly):**
+    *   `DATABASE_URL` (Backend): Constructed automatically from `.env` variables and service names.
+    *   `REDIS_HOST` (Backend): Set to the name of the Redis service (`cache`).
+    *   `REDIS_PORT` (Backend): Port for Redis (defaults to 6379).
+    *   `DEFAULT_CACHE_TTL_SECONDS` (Backend): Cache expiry time in seconds.
+    *   `DEV_PUBLIC_URL` (Backend): Base URL used by the backend to generate full short links (`http://localhost:3000` for local dev).
+    *   `FRONTEND_BASE_URL` (Backend): Base URL of the frontend app, used for redirecting inactive links (`http://localhost:3000` for local dev).
+    *   `VITE_API_BASE_URL` (Frontend Build Arg): Relative path for API requests, proxied by Nginx (`/api`).
 
-   - User submits a URL through the frontend
-   - Backend validates the URL format
-   - A unique ID is generated in the database
-   - The ID is encoded using Base62 to create a short code
-   - The mapping between short code and original URL is stored
+## 🔗 API Endpoints (Primary)
 
-2. **Redirection Process**:
-   - When a user visits a short URL, the system first checks Redis cache
-   - If found in cache, it redirects immediately
-   - If not in cache, it checks the database
-   - On successful lookup, it caches the result and increments visit count
-   - User is redirected to the original URL
+*   `POST /api/shorten`: Creates a new short URL.
+    *   Body: `{ "url": "string (valid URL)" }`
+*   `GET /api/links`: Retrieves a list of shortened URL history.
+*   `GET /api/links/{short_code}`: Retrieves details for a single short code.
+*   `PATCH /api/links/{short_code}/status`: Updates the status (Active/Inactive) of a link.
+    *   Body: `{ "status": "Active" | "Inactive" }`
+*   `GET /{short_code}`: Redirects to the original URL (if active) or the frontend inactive page (if inactive).
+*   `GET /api/health`: Health check endpoint for the backend service.
 
-## 📈 Performance Considerations
+*(See `http://localhost:8000/api/docs` for full interactive documentation)*
 
-- **Caching Strategy**: Redis stores frequently accessed URLs to reduce database load
-- **Database Indexing**: Optimized indexes on `short_code` for quick lookups
-- **Efficient Encoding**: Base62 encoding creates compact, URL-safe short codes
-- **Connection Pooling**: Both PostgreSQL and Redis use connection pooling
-- **Response Optimization**: Uses HTTP 307 redirects for proper handling
+## ✅ Running Tests
 
-## 🛡️ Security Considerations
+*   **Backend:** Tests (`pytest`) are automatically executed during the `docker compose build` process for the `backend` service. If tests fail, the build will stop.
+*   **Frontend:** Tests (`vitest`) are automatically executed during the `docker compose build` process for the `frontend` service. If tests fail, the build will stop.
+    *   To run frontend tests manually:
+        ```bash
+        cd frontend
+        npm test
+        ```
 
-- Non-root Docker users for enhanced container security
-- Proper input validation using Pydantic schemas
-- Environment-based configuration for sensitive information
-- Containerized isolation between services
+## 🔮 Potential Improvements / TODO
 
-## 🌐 Deployment
-
-### Production Considerations
-
-For production deployment:
-
-1. Update the `.env` file with production values
-2. Set `PUBLIC_URL` to your domain name
-3. Consider using a managed PostgreSQL and Redis service
-4. Set up HTTPS with a proper certificate
-5. Implement rate limiting for the API endpoints
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-<div align="center">
-  Built with ❤️ using FastAPI, React, PostgreSQL, and Redis
-</div>
+*   User Authentication/Authorization (associate links with users).
+*   Custom short code aliases.
+*   Link expiration dates.
+*   More detailed analytics (timestamps, referrers, etc.).
+*   Edit original URL functionality.
+*   Error handling improvements on the frontend.
+*   Pagination for link history.
+*   More comprehensive testing.
+*   Deployment configuration examples (e.g., using Traefik/Caddy, managed DB/Redis).
