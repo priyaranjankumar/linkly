@@ -1,0 +1,70 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Pass API base URL relative path for Nginx proxy
+        VITE_API_BASE_URL: /api
+    container_name: linkly_frontend
+    ports:
+      - "3000:80" # Expose Nginx on host port 3000
+    depends_on:
+      - backend
+    networks:
+      - linkly_net
+    restart: unless-stopped
+
+  backend:
+    build: ./backend # This will run tests during the build stage
+    container_name: linkly_backend
+    env_file:
+      - .env # Load environment variables from .env file
+    environment:
+      # Construct DB URL using service name 'db' and .env variables
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_HOST: cache # Use service name from docker-compose
+      REDIS_PORT: ${REDIS_PORT:-6379} # Use env var or default
+      # Add other backend-specific env vars if needed
+    ports:
+      - "8000:8000" # Expose backend API directly on host port 8000 (useful for dev/testing)
+    depends_on:
+      db:
+        condition: service_healthy # Wait for DB to be ready
+      cache:
+        condition: service_started # Redis starts quickly
+    networks:
+      - linkly_net
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: linkly_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - linkly_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  cache:
+    image: redis:7-alpine
+    container_name: linkly_cache
+    networks:
+      - linkly_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local # Persist DB data on the host machine
+
+networks:
+  linkly_net:
+    driver: bridge # Default docker network driver
