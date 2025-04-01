@@ -261,17 +261,16 @@ def update_link_status_endpoint(
     return schemas.URLMappingInfo.model_validate({**updated_db_url.__dict__, "short_url": short_url}, from_attributes=True)
 
 
-# --- UPDATED Redirection Endpoint ---
 @app.get(
     "/{short_code}",
     tags=["Redirection"],
-    response_model=None # Keep this to prevent FastAPI from using the Union type hint
+    response_model=None  # Prevent FastAPI from using the Union type hint
 )
 async def redirect_to_original_endpoint(
     short_code: str,
     db: Session = Depends(get_db),
     cache: redis.Redis = Depends(get_redis)
-) -> RedirectResponse | JSONResponse: # Return type hint is fine for static analysis
+) -> RedirectResponse | JSONResponse:
     """
     Redirects an active short code to its original URL (307).
     If inactive, redirects to a frontend page explaining the status (302).
@@ -294,8 +293,9 @@ async def redirect_to_original_endpoint(
                 link_status = LinkStatus(status_str) if status_str else None
 
                 if not original_url or link_status is None:
-                     logger.warning(f"Invalid data in cache for {short_code}. Treating as miss.")
-                     original_url = None; link_status = None
+                    logger.warning(f"Invalid data in cache for {short_code}. Treating as miss.")
+                    original_url = None
+                    link_status = None
                 elif link_status == LinkStatus.INACTIVE:
                     logger.warning(f"Redirecting inactive link (from cache) {short_code} to frontend info page.")
                     inactive_redirect_url = urljoin(FRONTEND_BASE_URL, f"/inactive?code={short_code}")
@@ -304,11 +304,14 @@ async def redirect_to_original_endpoint(
 
             except (json.JSONDecodeError, ValueError, TypeError) as e:
                 logger.error(f"Error decoding cache for {short_code}: {e}. Treating as miss.", exc_info=True)
-                original_url = None; link_status = None
-                try: cache.delete(cache_key)
-                except redis.RedisError: pass
+                original_url = None
+                link_status = None
+                try:
+                    cache.delete(cache_key)
+                except redis.RedisError:
+                    pass
         else:
-             logger.info(f"Cache miss for {short_code}.")
+            logger.info(f"Cache miss for {short_code}.")
 
     except redis.RedisError as e:
         logger.error(f"Redis Error getting cache for {cache_key}: {e}", exc_info=True)
@@ -321,8 +324,8 @@ async def redirect_to_original_endpoint(
             db_url = crud.get_url_by_short_code(db=db, short_code=short_code)
         except Exception as e:
             if "UndefinedTable" in str(e):
-                 logger.error(f"Database table 'url_mappings' likely missing: {e}", exc_info=True)
-                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database table setup incomplete.")
+                logger.error(f"Database table 'url_mappings' likely missing: {e}", exc_info=True)
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database table setup incomplete.")
             logger.error(f"DB error looking up {short_code}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retrieving redirect info.")
 
@@ -353,24 +356,24 @@ async def redirect_to_original_endpoint(
 
     # --- If we reach here, the link is ACTIVE ---
     if not original_url:
-         logger.error(f"Logic error: original_url is None before active redirect for {short_code}")
-         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to resolve original URL.")
+        logger.error(f"Logic error: original_url is None before active redirect for {short_code}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to resolve original URL.")
 
     # 5. Increment visit count
-    if db_url_for_increment is None: # If we got here via cache hit
+    if db_url_for_increment is None:  # If we got here via cache hit
         try:
             db_url_for_increment = crud.get_url_by_short_code(db=db, short_code=short_code)
         except Exception as e:
-             logger.error(f"DB error fetching {short_code} for count increment: {e}", exc_info=True)
+            logger.error(f"DB error fetching {short_code} for count increment: {e}", exc_info=True)
 
     if db_url_for_increment and db_url_for_increment.status == LinkStatus.ACTIVE:
         try:
             crud.increment_visit_count(db=db, db_url=db_url_for_increment)
             logger.debug(f"Incremented visit count for active link {short_code}.")
         except Exception as e:
-             logger.error(f"Error during count increment for {short_code}: {e}", exc_info=True)
+            logger.error(f"Error during count increment for {short_code}: {e}", exc_info=True)
     else:
-         logger.warning(f"Skipping count increment for {short_code} (Not found in DB for increment or status changed).")
+        logger.warning(f"Skipping count increment for {short_code} (Not found in DB for increment or status changed).")
 
     # 6. Perform The ACTUAL Redirect (for active links)
     logger.info(f"Performing redirect for active link: {short_code} -> {original_url}")
