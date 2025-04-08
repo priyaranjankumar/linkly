@@ -121,15 +121,17 @@ linkly/
    Create a `.env` file in the project's root directory (`linkly/`). Copy the contents from the example below and **replace the placeholder values** with your desired database credentials.
 
    ```dotenv
-   # .env (in project root)
+   # PostgreSQL Credentials
+   POSTGRES_USER=your_db_user
+   POSTGRES_PASSWORD=your_db_password
+   POSTGRES_DB=linklydb
 
-   # PostgreSQL Credentials - REQUIRED
-   POSTGRES_USER=your_db_user       # Replace with your desired username
-   POSTGRES_PASSWORD=your_db_password # Replace with a strong password
-   POSTGRES_DB=linklydb           # Replace with your desired database name
+   # Redis Configuration
+   REDIS_HOST=cache
+   REDIS_PORT=6379
 
-   # Optional: Specify Redis port if not default 6379
-   # REDIS_PORT=6379
+   # Backend Configuration
+   DEV_PUBLIC_URL=http://localhost:3000
    ```
 
    _Note: Other variables like `DEV_PUBLIC_URL` and `FRONTEND_BASE_URL` are now set directly in `docker-compose.yml` for convenience in local development._
@@ -172,12 +174,11 @@ linkly/
   - `POSTGRES_USER`: Username for the PostgreSQL database.
   - `POSTGRES_PASSWORD`: Password for the PostgreSQL user.
   - `POSTGRES_DB`: Name of the PostgreSQL database to use.
+  - `REDIS_HOST`: Hostname for the Redis service.
+  - `REDIS_PORT`: Port for Redis (defaults to 6379).
+  - `DEV_PUBLIC_URL`: Base URL used by the backend to generate full short links (`http://localhost:3000` for local dev).
 - **`docker-compose.yml` (Set Directly):**
   - `DATABASE_URL` (Backend): Constructed automatically from `.env` variables and service names.
-  - `REDIS_HOST` (Backend): Set to the name of the Redis service (`cache`).
-  - `REDIS_PORT` (Backend): Port for Redis (defaults to 6379).
-  - `DEFAULT_CACHE_TTL_SECONDS` (Backend): Cache expiry time in seconds.
-  - `DEV_PUBLIC_URL` (Backend): Base URL used by the backend to generate full short links (`http://localhost:3000` for local dev).
   - `FRONTEND_BASE_URL` (Backend): Base URL of the frontend app, used for redirecting inactive links (`http://localhost:3000` for local dev).
   - `VITE_API_BASE_URL` (Frontend Build Arg): Relative path for API requests, proxied by Nginx (`/api`).
 
