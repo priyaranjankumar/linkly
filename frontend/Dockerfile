@@ -14,7 +14,7 @@ COPY . .
 # --- Run Tests ---
 # This command runs the test script defined in package.json ('vitest').
 # If tests fail, the docker build will stop here.
-RUN npm test -- --reporter verbose
+RUN npm test 
 
 # --- Build Application (only if tests pass) ---
 # Set API base URL (can be overridden via --build-arg in docker-compose)

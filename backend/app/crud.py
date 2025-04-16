@@ -22,19 +22,22 @@ def get_url_by_original_url(db: Session, original_url: str) -> models.URLMapping
     """Fetches a URL mapping by its original URL (optional, for checking duplicates)."""
     return db.query(models.URLMapping).filter(models.URLMapping.original_url == original_url).first()
 
-def get_all_urls(db: Session, skip: int = 0, limit: int = 100) -> list[models.URLMapping]:
+def get_all_urls(db: Session, skip: int = 0, limit: int = 100, owner_id: int = None) -> list[models.URLMapping]:
     """Fetches a list of URL mappings, ordered by creation date descending."""
     logger.debug(f"Querying DB for all URLs: skip={skip}, limit={limit}")
-    results = db.query(models.URLMapping).order_by(models.URLMapping.created_at.desc()).offset(skip).limit(limit).all()
+    query = db.query(models.URLMapping)
+    if owner_id is not None:
+        query = query.filter(models.URLMapping.owner_id == owner_id)
+    results = query.order_by(models.URLMapping.created_at.desc()).offset(skip).limit(limit).all()
     logger.debug(f"Retrieved {len(results)} URLs from DB.")
     return results
 
 # --- Create Operation ---
 
-def create_short_url(db: Session, url: schemas.URLCreateRequest) -> models.URLMapping:
+def create_short_url(db: Session, url: schemas.URLCreateRequest, owner_id: int) -> models.URLMapping:
     """Creates a new URL mapping entry in the database using flush."""
     logger.info(f"Attempting to create short URL for: {url.url}")
-    db_url = models.URLMapping(original_url=str(url.url)) # Status defaults to ACTIVE
+    db_url = models.URLMapping(original_url=str(url.url), owner_id=owner_id) # Status defaults to ACTIVE
     db.add(db_url)
 
     try:

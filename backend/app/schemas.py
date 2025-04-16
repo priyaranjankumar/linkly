@@ -1,5 +1,5 @@
 # backend/app/schemas.py
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field, EmailStr
 from datetime import datetime
 from typing import List, Optional
 from .models import LinkStatus # Import the enum
@@ -14,6 +14,9 @@ class URLCreateRequest(BaseModel):
 class URLStatusUpdateRequest(BaseModel):
     status: LinkStatus # The desired new status (Active or Inactive)
 
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
 
 # --- Response Schemas ---
 
@@ -42,3 +45,10 @@ class URLMappingInfo(URLShortenResponse):
 # Schema for the API response returning a list of links for the history table
 class URLListResponse(BaseModel):
     links: List[URLMappingInfo]
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        from_attributes = True

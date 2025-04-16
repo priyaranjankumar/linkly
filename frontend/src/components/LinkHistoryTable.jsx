@@ -2,8 +2,8 @@
 import React from "react";
 import LinkHistoryRow from "./LinkHistoryRow";
 
-// Added onUpdateStatus prop
-function LinkHistoryTable({ links, loading, apiBaseUrl, onUpdateStatus }) {
+// Added onUpdateStatus and onDeleteLink props
+function LinkHistoryTable({ links, loading, apiBaseUrl, onUpdateStatus, onDeleteLink }) {
   return (
     <section className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
       <h2 className="text-xl font-semibold p-4 border-b border-gray-700 text-gray-200">
@@ -49,7 +49,8 @@ function LinkHistoryTable({ links, loading, apiBaseUrl, onUpdateStatus }) {
                   key={link.id || link.short_code}
                   link={link}
                   apiBaseUrl={apiBaseUrl}
-                  onUpdateStatus={onUpdateStatus} // Pass handler down
+                  onUpdateStatus={onUpdateStatus} // Pass status handler down
+                  onDeleteLink={onDeleteLink} // Pass delete handler down
                 />
               ))}
             </tbody>

@@ -13,6 +13,7 @@ from . import crud, models, schemas, utils
 from .database import engine, get_db, Base
 from .cache import get_redis, DEFAULT_CACHE_TTL_SECONDS, redis_pool
 from .models import LinkStatus
+from app.dependencies import get_current_user
 
 # Configure basic logging
 logging.basicConfig(
@@ -92,6 +93,9 @@ app = FastAPI(
     openapi_url="/api/openapi.json"
 )
 
+from app.routes_auth import router as auth_router
+app.include_router(auth_router)
+
 # --- Middleware for logging ---
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -118,12 +122,13 @@ def health_check():
 def shorten_url_endpoint(
     url_request: schemas.URLCreateRequest,
     db: Session = Depends(get_db),
-    cache: redis.Redis = Depends(get_redis)
+    cache: redis.Redis = Depends(get_redis),
+    current_user: models.User = Depends(get_current_user)
 ):
     """Creates a short URL for the given original URL."""
     logger.info(f"Received request to shorten URL: {url_request.url}")
     try:
-        db_url = crud.create_short_url(db=db, url=url_request)
+        db_url = crud.create_short_url(db=db, url=url_request, owner_id=current_user.id)
     except ValueError as ve:
          logger.error(f"ValueError during URL shortening process: {ve}", exc_info=True)
          raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal error during shortening: {ve}")
@@ -158,12 +163,13 @@ def shorten_url_endpoint(
 def read_links_endpoint(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
     """Retrieves a list of recently shortened URLs."""
     logger.info(f"Request received for link history: skip={skip}, limit={limit}")
     try:
-        db_links = crud.get_all_urls(db=db, skip=skip, limit=limit)
+        db_links = crud.get_all_urls(db=db, skip=skip, limit=limit, owner_id=current_user.id)
     except Exception as e:
         if "UndefinedTable" in str(e):
              logger.error(f"Database table 'url_mappings' likely missing: {e}", exc_info=True)

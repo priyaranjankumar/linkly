@@ -16,6 +16,7 @@ from app.cache import get_redis
 from app.database import Base
 from app import models
 from app.models import LinkStatus
+from app.dependencies import get_current_user
 
 # Configure basic logging for tests
 logging.basicConfig(level=logging.DEBUG)
@@ -84,21 +85,33 @@ def override_redis_dependency(fake_redis_client: fakeredis.FakeStrictRedis):
 
 app.dependency_overrides[get_db] = override_get_db
 
+# --- Dummy User for Auth Override ---
+class DummyUser:
+    def __init__(self):
+        self.id = 1
+        self.email = "testuser@example.com"
+
+@pytest.fixture(autouse=True, scope="session")
+def override_current_user():
+    def _get_current_user_override():
+        return DummyUser()
+    app.dependency_overrides[get_current_user] = _get_current_user_override
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
 # --- Test Client (remains the same) ---
 @pytest.fixture
 def client():
-     logger.debug("Creating TestClient.")
-     # Set TESTING env var before creating client for lifespan check
-     import os
-     original_testing_val = os.environ.get("TESTING")
-     os.environ["TESTING"] = "true"
-     with TestClient(app) as test_client:
+    logger.debug("Creating TestClient.")
+    import os
+    original_testing_val = os.environ.get("TESTING")
+    os.environ["TESTING"] = "true"
+    with TestClient(app) as test_client:
         yield test_client
-     # Restore original value
-     if original_testing_val is None:
-         del os.environ["TESTING"]
-     else:
-         os.environ["TESTING"] = original_testing_val
+    if original_testing_val is None:
+        del os.environ["TESTING"]
+    else:
+        os.environ["TESTING"] = original_testing_val
 
 
 # --- Test Functions ---
