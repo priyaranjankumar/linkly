@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { apiClient } from '../context/AuthContext'; // Import the configured client
 
-function UrlShortenerForm({ onNewUrl, apiBaseUrl }) { // apiBaseUrl is likely unused now
+function UrlShortenerForm({ onNewUrl }) { // Remove apiBaseUrl prop if no longer needed
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,8 +24,7 @@ function UrlShortenerForm({ onNewUrl, apiBaseUrl }) { // apiBaseUrl is likely un
     setIsLoading(true);
 
     try {
-      // Use the apiClient instance. Base URL is already set in apiClient.
-      // The endpoint is '/shorten' relative to the API_BASE_URL
+      // Use the apiClient instance. Endpoint is relative to base URL.
       const response = await apiClient.post(`/shorten`, { url }); // Using apiClient
 
       if (response.status === 201 && response.data) {
@@ -46,6 +45,10 @@ function UrlShortenerForm({ onNewUrl, apiBaseUrl }) { // apiBaseUrl is likely un
           } else {
              setError('An unexpected error occurred during validation.');
           }
+      // Check specifically for 401 which might indicate expired/invalid token
+      } else if (err.response && err.response.status === 401) {
+          setError('Authentication failed. Please log in again.');
+          // Optionally, trigger logout or redirect to login here
       } else if (err.request) {
           setError('Could not reach the server. Please check your connection.');
       } else {
