@@ -10,6 +10,7 @@ alembic==1.13.1 # Uncomment if using Alembic for migrations
 email-validator
 python-jose
 passlib
+bcrypt # Added bcrypt dependency
 
 # Testing dependencies
 pytest==8.1.1

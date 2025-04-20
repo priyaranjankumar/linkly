@@ -1,7 +1,8 @@
+# backend/app/routes_auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app import models, schemas, auth
-from app.database import get_db
+from . import models, schemas, auth # Changed to relative import
+from .database import get_db # Changed to relative import
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -17,7 +18,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.post("/login")
+@router.post("/login") # Consider adding response_model for token
 def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not auth.verify_password(user.password, db_user.hashed_password):
