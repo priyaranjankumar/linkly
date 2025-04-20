@@ -1,3 +1,18 @@
 .env
 node_modules
 .vscode
+# Terraform files
+infra/terraform.tfvars
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars.json
+infra/terraform.tfstate.json
+infra/terraform.tfstate.d
+infra/tfplan*
+infra/.terraform/
+infra/.terraform/*
+infra/.terraform.lock.hcl
+**/terraform-provider-*
+# Ignore any terraform provider binaries regardless of location
+**/terraform-provider-*.exe
+**/terraform-provider-*_v*

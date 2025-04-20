@@ -1,0 +1,124 @@
+name: Build and Deploy to AKS
+
+# Required repository secrets:
+# AZURE_CREDENTIALS: JSON output from 'az ad sp create-for-rbac' command
+# ACR_NAME: Azure Container Registry name (without .azurecr.io suffix)
+# AKS_CLUSTER_NAME: Azure Kubernetes Service cluster name
+# RESOURCE_GROUP_NAME: Azure Resource Group name
+# KEY_VAULT_NAME: Azure Key Vault name
+
+on:
+  push:
+    branches: [main] # Trigger on push to main branch
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_NAME }}.azurecr.io
+  IMAGE_TAG: ${{ github.sha }} # Use commit SHA as image tag
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_NAME }} # For ACR Basic/Standard with admin user enabled
+          password: ${{ secrets.AZURE_CREDENTIALS }} # Use SP creds if admin user is disabled, or get ACR creds
+
+      - name: Build and Push Backend Image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/backend:${{ env.IMAGE_TAG }} ./backend # Adjust path if needed
+          docker push ${{ env.ACR_LOGIN_SERVER }}/backend:${{ env.IMAGE_TAG }}
+          # Also tag as latest
+          docker tag ${{ env.ACR_LOGIN_SERVER }}/backend:${{ env.IMAGE_TAG }} ${{ env.ACR_LOGIN_SERVER }}/backend:latest
+          docker push ${{ env.ACR_LOGIN_SERVER }}/backend:latest
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }} ./frontend # Adjust path if needed
+          docker push ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+          # Also tag as latest
+          docker tag ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }} ${{ env.ACR_LOGIN_SERVER }}/frontend:latest
+          docker push ${{ env.ACR_LOGIN_SERVER }}/frontend:latest
+
+  deploy-to-aks:
+    runs-on: ubuntu-latest
+    needs: build-and-push # Run after build job
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.RESOURCE_GROUP_NAME }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+          admin: false # Use RBAC context
+          use-kubelogin: true # For non-admin login
+
+      - name: Get Secrets from Key Vault
+        id: getsecrets
+        run: |
+          echo "Setting secrets as environment variables..."
+          # Fetch secrets using Azure CLI
+          DB_HOST=$(az keyvault secret show --name db-host --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          DB_NAME=$(az keyvault secret show --name db-name --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          DB_USER=$(az keyvault secret show --name db-user --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          DB_PASSWORD=$(az keyvault secret show --name db-password --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          REDIS_HOST=$(az keyvault secret show --name redis-host --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          REDIS_PORT=$(az keyvault secret show --name redis-port --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+          REDIS_PASSWORD=$(az keyvault secret show --name redis-password --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)
+
+          # Make secrets available to subsequent steps (mask sensitive ones)
+          echo "::add-mask::$DB_PASSWORD"
+          echo "::add-mask::$REDIS_PASSWORD"
+          echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
+          echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+          echo "DB_USER=$DB_USER" >> $GITHUB_ENV
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+          echo "REDIS_HOST=$REDIS_HOST" >> $GITHUB_ENV
+          echo "REDIS_PORT=$REDIS_PORT" >> $GITHUB_ENV
+          echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> $GITHUB_ENV
+          echo "Secrets fetched."
+
+      - name: Create/Update Kubernetes Secret
+        run: |
+          kubectl create secret generic app-secrets \
+            --from-literal=DB_HOST=${{ env.DB_HOST }} \
+            --from-literal=DB_NAME=${{ env.DB_NAME }} \
+            --from-literal=DB_USER=${{ env.DB_USER }} \
+            --from-literal=DB_PASSWORD=${{ env.DB_PASSWORD }} \
+            --from-literal=REDIS_HOST=${{ env.REDIS_HOST }} \
+            --from-literal=REDIS_PORT=${{ env.REDIS_PORT }} \
+            --from-literal=REDIS_PASSWORD=${{ env.REDIS_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Manifests
+        run: |
+          # Replace image placeholders in manifests
+          sed -i "s|<ACR_LOGIN_SERVER>|${{ env.ACR_LOGIN_SERVER }}|g" ./kubernetes/*.yaml
+          sed -i "s|:latest|:${{ env.IMAGE_TAG }}|g" ./kubernetes/*.yaml # Use specific tag
+
+          # Apply manifests (except secrets.yaml as it's handled above)
+          kubectl apply -f ./kubernetes/backend-deployment.yaml
+          kubectl apply -f ./kubernetes/frontend-deployment.yaml
+          # Add other manifests here if needed
+
+          echo "Deployment initiated. Check rollout status..."
+          kubectl rollout status deployment/backend-deployment --timeout=120s
+          kubectl rollout status deployment/frontend-deployment --timeout=120s

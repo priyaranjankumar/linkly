@@ -1,0 +1,58 @@
+flowchart TD
+    subgraph "Azure Cloud"
+        WAF[Web Application Firewall]
+        AGW[Application Gateway]
+        
+        subgraph "AKS Cluster"
+            subgraph "URL Shortener Namespace"
+                FE[Frontend Pods]
+                BE[Backend Pods]
+                ING[Ingress Controller]
+            end
+        end
+        
+        ACR[Azure Container Registry]
+        KV[Key Vault]
+        PSQL[Azure PostgreSQL]
+        REDIS[Azure Cache for Redis]
+        INSIGHTS[Application Insights]
+        LOGS[Log Analytics]
+        STORAGE[Storage Account]
+    end
+    
+    subgraph "CI/CD"
+        GH[GitHub Repository]
+        GHA[GitHub Actions]
+    end
+    
+    USER[User] --> WAF
+    WAF --> AGW
+    AGW --> ING
+    ING --> FE
+    ING --> BE
+    
+    BE --> PSQL
+    BE --> REDIS
+    BE --> KV
+    FE --> BE
+    
+    BE -.monitoring.-> INSIGHTS
+    FE -.monitoring.-> INSIGHTS
+    INSIGHTS --> LOGS
+    LOGS -.logs.-> STORAGE
+    
+    GH --> GHA
+    GHA --> ACR
+    ACR --> FE
+    ACR --> BE
+    GHA -.deploy.-> AKS
+    
+    classDef azure fill:#0072C6,color:white,stroke:#0072C6
+    classDef aks fill:#326CE5,color:white,stroke:#326CE5
+    classDef cicd fill:#2088FF,color:white,stroke:#2088FF
+    classDef user fill:#7D3C98,color:white,stroke:#7D3C98
+    
+    class WAF,AGW,ACR,KV,PSQL,REDIS,INSIGHTS,LOGS,STORAGE azure
+    class FE,BE,ING,AKS aks
+    class GH,GHA cicd
+    class USER user
