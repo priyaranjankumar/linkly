@@ -1,38 +1,61 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-const storedToken = localStorage.getItem('authToken');
-if (storedToken) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-}
+// Create a dedicated Axios instance
+const apiClient = axios.create({
+    baseURL: API_BASE_URL
+});
+
+// --- Remove setting default header on initial load ---
+// const storedToken = localStorage.getItem('authToken');
+// if (storedToken) {
+//     apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+// }
+
+// Add a request interceptor to attach the token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        // console.log('Interceptor added header:', config.headers.Authorization);
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(localStorage.getItem('authToken'));
+    const [token, setToken] = useState(() => localStorage.getItem('authToken')); // Initialize state directly
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Effect to update localStorage when token state changes
     useEffect(() => {
         if (token) {
             localStorage.setItem('authToken', token);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // --- Remove setting default header here ---
+            // apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         } else {
             localStorage.removeItem('authToken');
-            delete axios.defaults.headers.common['Authorization'];
+            // --- Remove deleting default header here ---
+            // delete apiClient.defaults.headers.common['Authorization'];
         }
     }, [token]);
 
+    // Effect to sync between tabs
     useEffect(() => {
         const handleStorage = (event) => {
             if (event.key === 'authToken') {
-                if (!event.newValue) {
-                    setToken(null); // Token removed in another tab, log out here
-                } else {
-                    setToken(event.newValue); // Token added/changed in another tab
-                }
+                const newToken = event.newValue;
+                setToken(newToken); // Update state based on storage change
             }
         };
         window.addEventListener('storage', handleStorage);
@@ -43,10 +66,12 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+            // Use the apiClient instance for the request
+            const response = await apiClient.post(`/auth/login`, { email, password });
             if (response.data && response.data.access_token) {
                 setToken(response.data.access_token);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+                // --- Remove setting default header here ---
+                // apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
                 return true;
             } else {
                 throw new Error('Login failed: No token received');
@@ -55,7 +80,8 @@ export const AuthProvider = ({ children }) => {
             console.error("Login error:", err);
             setError(err.response?.data?.detail || 'Login failed. Please check credentials.');
             setToken(null); // Ensure token is null on error
-            delete axios.defaults.headers.common['Authorization'];
+             // --- Remove deleting default header here ---
+            // delete apiClient.defaults.headers.common['Authorization'];
             return false;
         } finally {
             setLoading(false);
@@ -66,9 +92,10 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/register`, { email, password });
+            // Use the apiClient instance
+            await apiClient.post(`/auth/register`, { email, password });
             // Auto-login after registration
-            const loginSuccess = await login(email, password);
+            const loginSuccess = await login(email, password); // login already uses apiClient
             return loginSuccess;
         } catch (err) {
             console.error("Registration error:", err);
@@ -80,7 +107,7 @@ export const AuthProvider = ({ children }) => {
     }, [login]);
 
     const logout = useCallback(() => {
-        setToken(null);
+        setToken(null); // This triggers the useEffect to remove from localStorage
     }, []);
 
     const value = {
@@ -91,6 +118,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         error,
         isAuthenticated: !!token,
+        apiClient // Expose the configured apiClient instance if needed elsewhere
     };
 
     return (
@@ -107,3 +135,6 @@ export const useAuth = () => {
     }
     return context;
 };
+
+// Export the configured apiClient so other parts of the app can use it
+export { apiClient };
