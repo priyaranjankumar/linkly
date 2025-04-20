@@ -8,12 +8,6 @@ const apiClient = axios.create({
     baseURL: API_BASE_URL
 });
 
-// --- Remove setting default header on initial load ---
-// const storedToken = localStorage.getItem('authToken');
-// if (storedToken) {
-//     apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-// }
-
 // Add a request interceptor to attach the token
 apiClient.interceptors.request.use(
     (config) => {
@@ -21,7 +15,6 @@ apiClient.interceptors.request.use(
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
-        // console.log('Interceptor added header:', config.headers.Authorization);
         return config;
     },
     (error) => {
@@ -29,24 +22,40 @@ apiClient.interceptors.request.use(
     }
 );
 
+// Helper function to decode JWT payload (basic)
+const decodeToken = (token) => {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (error) {
+        console.error("Failed to decode token:", error);
+        return null;
+    }
+};
+
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(() => localStorage.getItem('authToken')); // Initialize state directly
+    const [token, setToken] = useState(() => localStorage.getItem('authToken'));
+    const [currentUser, setCurrentUser] = useState(null); // State for user info
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Effect to update localStorage when token state changes
+    // Effect to update localStorage and decode token when token state changes
     useEffect(() => {
         if (token) {
             localStorage.setItem('authToken', token);
-            // --- Remove setting default header here ---
-            // apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            const decoded = decodeToken(token);
+             // Assuming email is in 'sub' claim based on backend code
+            setCurrentUser(decoded ? { email: decoded.sub } : null);
         } else {
             localStorage.removeItem('authToken');
-            // --- Remove deleting default header here ---
-            // delete apiClient.defaults.headers.common['Authorization'];
+            setCurrentUser(null); // Clear user info on logout
         }
     }, [token]);
 
@@ -66,12 +75,9 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            // Use the apiClient instance for the request
             const response = await apiClient.post(`/auth/login`, { email, password });
             if (response.data && response.data.access_token) {
-                setToken(response.data.access_token);
-                // --- Remove setting default header here ---
-                // apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+                setToken(response.data.access_token); // This triggers useEffect to decode
                 return true;
             } else {
                 throw new Error('Login failed: No token received');
@@ -80,8 +86,6 @@ export const AuthProvider = ({ children }) => {
             console.error("Login error:", err);
             setError(err.response?.data?.detail || 'Login failed. Please check credentials.');
             setToken(null); // Ensure token is null on error
-             // --- Remove deleting default header here ---
-            // delete apiClient.defaults.headers.common['Authorization'];
             return false;
         } finally {
             setLoading(false);
@@ -92,10 +96,9 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            // Use the apiClient instance
             await apiClient.post(`/auth/register`, { email, password });
             // Auto-login after registration
-            const loginSuccess = await login(email, password); // login already uses apiClient
+            const loginSuccess = await login(email, password);
             return loginSuccess;
         } catch (err) {
             console.error("Registration error:", err);
@@ -107,18 +110,19 @@ export const AuthProvider = ({ children }) => {
     }, [login]);
 
     const logout = useCallback(() => {
-        setToken(null); // This triggers the useEffect to remove from localStorage
+        setToken(null); // This triggers the useEffect to remove from localStorage & clear user
     }, []);
 
     const value = {
         token,
+        currentUser, // Provide current user info
         login,
         register,
         logout,
         loading,
         error,
         isAuthenticated: !!token,
-        apiClient // Expose the configured apiClient instance if needed elsewhere
+        apiClient
     };
 
     return (

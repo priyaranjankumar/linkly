@@ -1,8 +1,6 @@
 // frontend/src/App.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route } from "react-router-dom";
-// Remove global axios import
-// import axios from "axios";
 import { useAuth, apiClient } from "./context/AuthContext"; // Import useAuth AND apiClient
 import Header from "./components/Header";
 import UrlShortenerForm from "./components/UrlShortenerForm";
@@ -10,11 +8,9 @@ import LinkHistoryTable from "./components/LinkHistoryTable";
 import InactiveLinkPage from "./components/InactiveLinkPage";
 import AuthForm from "./components/AuthForm";
 
-// API_BASE_URL is now implicitly handled by apiClient's baseURL
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-
 function App() {
-  const { isAuthenticated, logout, token } = useAuth();
+  // Get currentUser from context
+  const { isAuthenticated, logout, token, currentUser } = useAuth();
   const [links, setLinks] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [errorHistory, setErrorHistory] = useState("");
@@ -30,8 +26,7 @@ function App() {
     setLoadingHistory(true);
     setErrorHistory("");
     try {
-      // Use apiClient - token is added by interceptor
-      const response = await apiClient.get("/links"); // Use relative path
+      const response = await apiClient.get("/links");
       if (response.data && Array.isArray(response.data.links)) {
         setLinks(response.data.links);
       } else {
@@ -68,9 +63,8 @@ function App() {
       setUpdateError("");
 
       try {
-        // Use apiClient
         const response = await apiClient.patch(
-          `/links/${shortCode}/status`, // Use relative path
+          `/links/${shortCode}/status`,
           { status: newStatus }
         );
 
@@ -96,32 +90,14 @@ function App() {
     [logout]
   );
 
-  // Handler for deleting a link (Note: endpoint uses short_code now)
-  const handleDeleteLink = useCallback(async (shortCode) => { // Changed param from linkId to shortCode
+  const handleDeleteLink = useCallback(async (shortCode) => {
     setUpdateError("");
-    console.log(`[handleDeleteLink] Attempting to delete shortCode: ${shortCode} (Type: ${typeof shortCode})`); // <<< ADDED
-
     try {
-      // Use apiClient and correct identifier (short_code)
-      const response = await apiClient.delete(`/links/${shortCode}`); // Use relative path and shortCode
-      console.log(`[handleDeleteLink] API response status: ${response.status}`); // <<< ADDED
+      const response = await apiClient.delete(`/links/${shortCode}`);
 
       if (response.status === 204) {
-        console.log("[handleDeleteLink] Received 204, attempting to filter state..."); // <<< ADDED
-        setLinks((prevLinks) => {
-          console.log("[handleDeleteLink] Current links:", prevLinks); // <<< ADDED
-          const filteredLinks = prevLinks.filter((link) => {
-            const comparison = link.short_code !== shortCode;
-            // Optional verbose log:
-            // console.log(`[handleDeleteLink] Comparing link.short_code (${link.short_code}, type: ${typeof link.short_code}) !== shortCode (${shortCode}, type: ${typeof shortCode}) -> ${comparison}`);
-             return comparison;
-          });
-          console.log("[handleDeleteLink] Filtered links:", filteredLinks); // <<< ADDED
-          return filteredLinks;
-        });
-        console.log("[handleDeleteLink] setLinks called."); // <<< ADDED
+        setLinks((prevLinks) => prevLinks.filter((link) => link.short_code !== shortCode));
       } else {
-        console.error("[handleDeleteLink] Unexpected success status:", response.status); // <<< ADDED
         throw new Error("Failed to delete link - unexpected response");
       }
     } catch (err) {
@@ -132,24 +108,30 @@ function App() {
         }`
       );
       if (err.response?.status === 401) logout();
-      // Consider re-throwing if necessary, but maybe not for simple delete failure?
-      // throw err;
     }
-  }, [logout]); // Keep dependencies minimal
+  }, [logout]);
 
   const MainLayout = () => (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
       <Header />
       {isAuthenticated ? (
         <>
-          <button
-            onClick={logout}
-            className="mb-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition duration-150 ease-in-out"
-          >
-            Logout
-          </button>
-          {/* Pass apiClient to form if it makes direct calls */}
-          <UrlShortenerForm onNewUrl={handleNewUrl} /* apiClient={apiClient} */ />
+          {/* User Info and Logout Button - Aligned Right */}
+          <div className="flex justify-end items-center mb-4">
+            {currentUser && (
+              <span className="text-gray-400 text-sm mr-4">
+                Logged in as: {currentUser.email}
+              </span>
+            )}
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition duration-150 ease-in-out"
+            >
+              Logout
+            </button>
+          </div>
+
+          <UrlShortenerForm onNewUrl={handleNewUrl} />
           {updateError && (
             <p className="text-red-400 mb-4 text-center bg-red-900/30 p-2 rounded">
               {updateError}
@@ -158,14 +140,11 @@ function App() {
           {errorHistory && (
             <p className="text-red-400 text-center mb-4">{errorHistory}</p>
           )}
-          {/* Pass handlers and potentially apiClient to table */}
           <LinkHistoryTable
             links={links}
             loading={loadingHistory}
             onUpdateStatus={handleUpdateStatus}
             onDeleteLink={handleDeleteLink}
-            // Pass apiClient if rows make direct calls, though handlers here use it already
-            // apiClient={apiClient}
           />
         </>
       ) : (
