@@ -50,11 +50,13 @@ function LinkHistoryRow({ link, onUpdateStatus, onDeleteLink }) {
   // Called when the user confirms deletion in the modal
   const confirmDelete = async () => {
     setIsModalOpen(false); // Close modal first
-    if (isDeleting || !link.id) return; // Prevent multiple clicks or if no id
+    // Use link.short_code here, as App.jsx expects it
+    if (isDeleting || !link.short_code) return;
 
     setIsDeleting(true);
     try {
-      await onDeleteLink(link.id); // Call the handler passed from App.jsx
+      // Pass link.short_code to the handler
+      await onDeleteLink(link.short_code);
       // No need to set state here, parent (App.jsx) will update the 'links' prop
     } catch (error) {
       // Error is handled and displayed in App.jsx
