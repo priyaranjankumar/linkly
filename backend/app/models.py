@@ -3,9 +3,9 @@ from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
-import enum
+import enum # Re-add enum import
 
-# Define possible statuses using Python Enum
+# Re-add LinkStatus enum
 class LinkStatus(str, enum.Enum):
     ACTIVE = "Active"
     INACTIVE = "Inactive"
@@ -21,14 +21,12 @@ class User(Base):
 class URLMapping(Base):
     __tablename__ = "url_mappings"
 
-    # Use Integer for ID - better compatibility with SQLite autoincrement in tests
     id = Column(Integer, primary_key=True, index=True)
-    # Short code is generated after initial insertion based on ID
     short_code = Column(String, unique=True, index=True, nullable=True)
     original_url = Column(String, index=True, nullable=False)
     visit_count = Column(Integer, default=0, nullable=False)
+    # Re-add status column with default
     status = Column(SQLAlchemyEnum(LinkStatus), default=LinkStatus.ACTIVE, nullable=False)
-    # Automatically set creation timestamp on the database side
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     owner = relationship("User", back_populates="links")

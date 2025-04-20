@@ -2,15 +2,14 @@
 from pydantic import BaseModel, HttpUrl, Field, EmailStr
 from datetime import datetime
 from typing import List, Optional
-from .models import LinkStatus # Import the enum
+from .models import LinkStatus # Re-add LinkStatus import
 
 # --- Request Schemas ---
 
-# Schema for validating the incoming URL shortening request body
 class URLCreateRequest(BaseModel):
-    url: HttpUrl # Pydantic automatically validates if it's a valid HTTP/HTTPS URL
+    url: HttpUrl
 
-# Schema for updating the status of a link
+# Re-add Schema for updating the status of a link
 class URLStatusUpdateRequest(BaseModel):
     status: LinkStatus # The desired new status (Active or Inactive)
 
@@ -20,29 +19,24 @@ class UserCreate(BaseModel):
 
 # --- Response Schemas ---
 
-# Base schema for URL mapping data, used for inheritance
 class URLMappingBase(BaseModel):
     original_url: HttpUrl
-    short_code: Optional[str] = None # Short code might not exist initially
+    short_code: Optional[str] = None
 
-# Schema for the response returned after successfully creating a short URL
-class URLShortenResponse(URLMappingBase):
+# Re-add status field to response schemas
+class URLMappingInfo(URLMappingBase):
     id: int
     visit_count: int
-    status: LinkStatus
+    status: LinkStatus # Re-add status field
     created_at: datetime
-    short_url: str # The full clickable short URL (e.g., http://localhost:3000/abc)
+    short_url: str
 
-    # Pydantic V2 config
     class Config:
-        from_attributes = True # Replaces orm_mode=True in Pydantic V2
+        from_attributes = True
 
-# Schema used when retrieving details of a single link (can reuse URLShortenResponse)
-# This is also used for the status update response
-class URLMappingInfo(URLShortenResponse):
+class URLShortenResponse(URLMappingInfo):
     pass
 
-# Schema for the API response returning a list of links for the history table
 class URLListResponse(BaseModel):
     links: List[URLMappingInfo]
 
