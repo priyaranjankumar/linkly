@@ -99,15 +99,29 @@ function App() {
   // Handler for deleting a link (Note: endpoint uses short_code now)
   const handleDeleteLink = useCallback(async (shortCode) => { // Changed param from linkId to shortCode
     setUpdateError("");
+    console.log(`[handleDeleteLink] Attempting to delete shortCode: ${shortCode} (Type: ${typeof shortCode})`); // <<< ADDED
 
     try {
       // Use apiClient and correct identifier (short_code)
       const response = await apiClient.delete(`/links/${shortCode}`); // Use relative path and shortCode
+      console.log(`[handleDeleteLink] API response status: ${response.status}`); // <<< ADDED
 
       if (response.status === 204) {
-        // Remove the link from the state based on shortCode
-        setLinks((prevLinks) => prevLinks.filter((link) => link.short_code !== shortCode));
+        console.log("[handleDeleteLink] Received 204, attempting to filter state..."); // <<< ADDED
+        setLinks((prevLinks) => {
+          console.log("[handleDeleteLink] Current links:", prevLinks); // <<< ADDED
+          const filteredLinks = prevLinks.filter((link) => {
+            const comparison = link.short_code !== shortCode;
+            // Optional verbose log:
+            // console.log(`[handleDeleteLink] Comparing link.short_code (${link.short_code}, type: ${typeof link.short_code}) !== shortCode (${shortCode}, type: ${typeof shortCode}) -> ${comparison}`);
+             return comparison;
+          });
+          console.log("[handleDeleteLink] Filtered links:", filteredLinks); // <<< ADDED
+          return filteredLinks;
+        });
+        console.log("[handleDeleteLink] setLinks called."); // <<< ADDED
       } else {
+        console.error("[handleDeleteLink] Unexpected success status:", response.status); // <<< ADDED
         throw new Error("Failed to delete link - unexpected response");
       }
     } catch (err) {
@@ -118,9 +132,10 @@ function App() {
         }`
       );
       if (err.response?.status === 401) logout();
-      throw err;
+      // Consider re-throwing if necessary, but maybe not for simple delete failure?
+      // throw err;
     }
-  }, [logout]);
+  }, [logout]); // Keep dependencies minimal
 
   const MainLayout = () => (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
