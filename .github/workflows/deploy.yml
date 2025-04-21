@@ -62,6 +62,16 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Install kubelogin
+        run: |
+          echo "Installing kubelogin..."
+          curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.30/kubelogin-linux-amd64.zip
+          unzip kubelogin-linux-amd64.zip
+          sudo mv bin/linux_amd64/kubelogin /usr/local/bin/
+          sudo chmod +x /usr/local/bin/kubelogin
+          rm -rf bin kubelogin-linux-amd64.zip
+          echo "kubelogin installed"
 
       - name: Set AKS context
         uses: azure/aks-set-context@v3
