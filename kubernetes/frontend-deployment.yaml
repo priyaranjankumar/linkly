@@ -18,10 +18,12 @@ spec:
         ports:
         - containerPort: 80
         env: 
-        - name: REACT_APP_API_URL # Backend service URL for frontend
+        - name: VITE_API_URL # Backend service URL for frontend
           value: "http://backend-service"
         - name: VITE_API_BASE_URL
           value: "/api"  # This assumes your nginx config is set up to proxy /api to the backend
+        - name: BACKEND_SERVICE_URL
+          value: "http://backend-service"
         resources: # Request minimal resources
           requests:
             cpu: "50m"
@@ -31,14 +33,15 @@ spec:
             memory: "256Mi"
         readinessProbe:
           httpGet:
-            path: / # Check the root path instead of health.html which may not exist
+            path: /
             port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 3
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 15
+          failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: / # Check the root path
+            path: /
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 20
