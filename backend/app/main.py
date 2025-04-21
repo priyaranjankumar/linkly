@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
         redis_conn_check = None
         if redis_pool:
             try:
-                redis_conn_check = redis.Redis(connection_pool=redis_pool)
+                redis_conn_check = redis.Redis(connection_pool=redis_pool,socket_timeout=5.0, socket_connect_timeout=5.0)
                 ping_response = redis_conn_check.ping()
                 if ping_response:
                     logger.info("Redis PING successful, connection is healthy")
