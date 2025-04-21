@@ -61,17 +61,20 @@ async def lifespan(app: FastAPI):
                 redis_conn_check = redis.Redis(connection_pool=redis_pool)
                 ping_response = redis_conn_check.ping()
                 if ping_response:
-                    logger.info(f"Redis connection successful (PING response: {ping_response})")
+                    logger.info("Redis PING successful, connection is healthy")
                 else:
-                    logger.warning("Redis PING command returned an unexpected non-true value.")
+                    logger.warning("Redis PING returned false, connection may be unstable")
             except redis.exceptions.ConnectionError as e_redis_conn:
                 logger.error(f"CRITICAL: Failed to connect to Redis on startup: {e_redis_conn}", exc_info=True)
+                # Continue application startup even if Redis is unavailable
+                logger.warning("Will continue application startup despite Redis connection failure")
             except Exception as e_redis_other:
                 logger.error(f"CRITICAL: An unexpected error occurred during Redis PING: {e_redis_other}", exc_info=True)
+                # Continue application startup even if Redis fails for unknown reasons
+                logger.warning("Will continue application startup despite Redis error")
             finally:
                 if redis_conn_check:
-                    try: redis_conn_check.close()
-                    except Exception: pass
+                    logger.debug("Cleaning up Redis connection check")
         else:
             logger.error("CRITICAL: Redis connection pool not available on startup.")
     else:
