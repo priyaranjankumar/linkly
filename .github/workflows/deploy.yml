@@ -92,6 +92,29 @@ jobs:
             --secret-permissions get list
           
           echo "Key Vault access granted"
+          
+      - name: Grant AKS RBAC Permissions
+        run: |
+          echo "Granting service principal access to AKS cluster..."
+          
+          # Extract client ID from AZURE_CREDENTIALS if not already done
+          if [ -z "$CLIENT_ID" ]; then
+            CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+            echo "Using Client ID: $CLIENT_ID"
+          fi
+          
+          # Get the resource ID of the AKS cluster
+          AKS_RESOURCE_ID=$(az aks show -g ${{ secrets.RESOURCE_GROUP_NAME }} -n ${{ secrets.AKS_CLUSTER_NAME }} --query id -o tsv)
+          echo "AKS Resource ID: $AKS_RESOURCE_ID"
+          
+          # Grant the Contributor role to the service principal on the AKS cluster
+          echo "Assigning Contributor role to the service principal..."
+          az role assignment create \
+            --assignee "$CLIENT_ID" \
+            --role "Azure Kubernetes Service Cluster User Role" \
+            --scope "$AKS_RESOURCE_ID"
+          
+          echo "AKS permissions granted"
 
       - name: Set AKS context
         uses: azure/aks-set-context@v3
