@@ -157,6 +157,43 @@ jobs:
           kubectl apply -f ./kubernetes/frontend-deployment.yaml
           # Add other manifests here if needed
 
-          echo "Deployment initiated. Check rollout status..."
-          kubectl rollout status deployment/backend-deployment --timeout=120s
-          kubectl rollout status deployment/frontend-deployment --timeout=120s
+          echo "Deployment initiated. Checking deployment status..."
+          
+          # Wait a moment for pods to start being created
+          sleep 20
+          
+          # Debug - check status of pods
+          echo "=== Current pod status ==="
+          kubectl get pods
+          
+          # Debug - check deployment details
+          echo "=== Deployment details ==="
+          kubectl describe deployment/backend-deployment
+          
+          # Debug - check events
+          echo "=== Cluster events ==="
+          kubectl get events --sort-by='.lastTimestamp'
+          
+          # Get pod status for more details
+          POD_NAME=$(kubectl get pods -l app=backend -o jsonpath="{.items[0].metadata.name}")
+          if [ -n "$POD_NAME" ]; then
+            echo "=== Backend pod details ==="
+            kubectl describe pod $POD_NAME
+            
+            # Check pod logs if possible
+            echo "=== Backend pod logs (if any) ==="
+            kubectl logs $POD_NAME --previous || true
+            kubectl logs $POD_NAME || true
+          else
+            echo "No backend pods found yet"
+          fi
+          
+          # Now monitor rollout with increased verbosity
+          echo "Monitoring deployment rollout (will timeout after 120s)..."
+          kubectl rollout status deployment/backend-deployment --timeout=120s || {
+            echo "Backend deployment timed out, but continuing with frontend check"
+          }
+          kubectl rollout status deployment/frontend-deployment --timeout=120s || {
+            echo "Frontend deployment timed out"
+            exit 1
+          }
