@@ -72,6 +72,20 @@ jobs:
           sudo chmod +x /usr/local/bin/kubelogin
           rm -rf bin kubelogin-linux-amd64.zip
           echo "kubelogin installed"
+      
+      - name: Grant Key Vault Access
+        run: |
+          echo "Granting service principal access to Key Vault..."
+          # Get the service principal object ID (different from the client/app ID)
+          SP_OBJECT_ID=$(az ad sp show --id ${{ secrets.SERVICE_PRINCIPAL_ID }} --query id -o tsv)
+          
+          # Set access policy to allow secret getting
+          az keyvault set-policy --name ${{ secrets.KEY_VAULT_NAME }} \
+            --resource-group ${{ secrets.RESOURCE_GROUP_NAME }} \
+            --object-id $SP_OBJECT_ID \
+            --secret-permissions get list
+          
+          echo "Key Vault access granted"
 
       - name: Set AKS context
         uses: azure/aks-set-context@v3
