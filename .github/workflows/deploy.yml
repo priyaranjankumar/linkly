@@ -76,13 +76,19 @@ jobs:
       - name: Grant Key Vault Access
         run: |
           echo "Granting service principal access to Key Vault..."
-          # Get the service principal object ID (different from the client/app ID)
-          SP_OBJECT_ID=$(az ad sp show --id ${{ secrets.SERVICE_PRINCIPAL_ID }} --query id -o tsv)
+          
+          # Extract client ID from AZURE_CREDENTIALS
+          CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+          echo "Using Client ID: $CLIENT_ID"
+          
+          # Get the service principal object ID from client ID
+          SP_OBJECT_ID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv)
+          echo "Found Object ID: $SP_OBJECT_ID"
           
           # Set access policy to allow secret getting
           az keyvault set-policy --name ${{ secrets.KEY_VAULT_NAME }} \
             --resource-group ${{ secrets.RESOURCE_GROUP_NAME }} \
-            --object-id $SP_OBJECT_ID \
+            --object-id "$SP_OBJECT_ID" \
             --secret-permissions get list
           
           echo "Key Vault access granted"
