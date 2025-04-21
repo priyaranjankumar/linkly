@@ -21,7 +21,7 @@ spec:
         - name: DATABASE_URL
           value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)"
         - name: REDIS_CONNECTION_STRING
-          value: "rediss://$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)"
+          value: "rediss://$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/0?ssl_cert_reqs=none"
         - name: FRONTEND_BASE_URL
           value: "http://frontend-service"
         - name: PUBLIC_URL
