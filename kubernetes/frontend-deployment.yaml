@@ -17,9 +17,11 @@ spec:
         image: <ACR_LOGIN_SERVER>/frontend:latest # Placeholder - CI/CD replaces this
         ports:
         - containerPort: 80
-        env: # Pass backend service URL to frontend if needed
-        - name: REACT_APP_API_URL # Example variable name
-          value: "http://backend-service" # Internal Kubernetes DNS name
+        env: 
+        - name: REACT_APP_API_URL # Backend service URL for frontend
+          value: "http://backend-service"
+        - name: VITE_API_BASE_URL
+          value: "/api"  # This assumes your nginx config is set up to proxy /api to the backend
         resources: # Request minimal resources
           requests:
             cpu: "50m"
@@ -29,16 +31,18 @@ spec:
             memory: "256Mi"
         readinessProbe:
           httpGet:
-            path: /health.html # Or your actual health check path
+            path: / # Check the root path instead of health.html which may not exist
             port: 80
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10
           periodSeconds: 10
+          timeoutSeconds: 3
         livenessProbe:
           httpGet:
-            path: /health.html # Or your actual health check path
+            path: / # Check the root path
             port: 80
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30
           periodSeconds: 20
+          timeoutSeconds: 3
 
 ---
 apiVersion: v1

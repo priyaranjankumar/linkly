@@ -17,6 +17,15 @@ spec:
         image: <ACR_LOGIN_SERVER>/backend:latest # Placeholder - CI/CD replaces this
         ports:
         - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)"
+        - name: REDIS_CONNECTION_STRING
+          value: "rediss://$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)"
+        - name: FRONTEND_BASE_URL
+          value: "http://frontend-service"
+        - name: PUBLIC_URL
+          value: "http://frontend-service"
         envFrom:
         - secretRef:
             name: app-secrets # Load secrets as environment variables
@@ -31,14 +40,16 @@ spec:
           httpGet:
             path: /health # Your health check endpoint
             port: 8000
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30 # Increase from 15 to 30 to give more startup time
           periodSeconds: 10
+          timeoutSeconds: 5 # Increase timeout value
         livenessProbe: # Check if app is still alive
           httpGet:
             path: /health # Your health check endpoint
             port: 8000
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60 # Increase from 30 to 60
           periodSeconds: 20
+          timeoutSeconds: 5 # Increase timeout value
 
 ---
 apiVersion: v1
