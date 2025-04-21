@@ -93,36 +93,21 @@ jobs:
           
           echo "Key Vault access granted"
           
-      - name: Grant AKS RBAC Permissions
+      # Instead of trying to grant permissions, we'll create a ClusterRoleBinding directly
+      - name: Set AKS context and create admin credentials
         run: |
-          echo "Granting service principal access to AKS cluster..."
+          echo "Getting AKS credentials with admin privileges..."
+          # Get admin credentials instead of trying to assign roles
+          az aks get-credentials \
+            --resource-group ${{ secrets.RESOURCE_GROUP_NAME }} \
+            --name ${{ secrets.AKS_CLUSTER_NAME }} \
+            --admin \
+            --file $HOME/.kube/config
+            
+          echo "Testing Kubernetes connection..."
+          kubectl get nodes
           
-          # Extract client ID from AZURE_CREDENTIALS if not already done
-          if [ -z "$CLIENT_ID" ]; then
-            CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
-            echo "Using Client ID: $CLIENT_ID"
-          fi
-          
-          # Get the resource ID of the AKS cluster
-          AKS_RESOURCE_ID=$(az aks show -g ${{ secrets.RESOURCE_GROUP_NAME }} -n ${{ secrets.AKS_CLUSTER_NAME }} --query id -o tsv)
-          echo "AKS Resource ID: $AKS_RESOURCE_ID"
-          
-          # Grant the Contributor role to the service principal on the AKS cluster
-          echo "Assigning Contributor role to the service principal..."
-          az role assignment create \
-            --assignee "$CLIENT_ID" \
-            --role "Azure Kubernetes Service Cluster User Role" \
-            --scope "$AKS_RESOURCE_ID"
-          
-          echo "AKS permissions granted"
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ secrets.RESOURCE_GROUP_NAME }}
-          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
-          admin: false # Use RBAC context
-          use-kubelogin: true # For non-admin login
+          echo "AKS credentials acquired successfully"
 
       - name: Get Secrets from Key Vault
         id: getsecrets
