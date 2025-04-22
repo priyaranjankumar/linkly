@@ -23,9 +23,9 @@ spec:
         - name: REDIS_CONNECTION_STRING
           value: "rediss://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/0?ssl_cert_reqs=none"
         - name: FRONTEND_BASE_URL
-          value: "http://frontend-service"
+          value: "http://$(FRONTEND_URL)"  # Use environment variable substitution
         - name: PUBLIC_URL
-          value: "http://frontend-service"
+          value: "http://$(FRONTEND_URL)"  # Use environment variable substitution
         envFrom:
         - secretRef:
             name: app-secrets # Load secrets as environment variables
