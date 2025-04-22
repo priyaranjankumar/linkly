@@ -4,11 +4,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-REDIS_HOST = os.getenv("REDIS_HOST", "cache") # Use service name from docker-compose
+REDIS_HOST = os.getenv("REDIS_HOST", "cache")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") # Add this line
 
-# Redis connection pool (consider async redis if using async db driver/endpoints)
-redis_pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
+# Update connection pool to include password
+redis_pool = redis.ConnectionPool(
+    host=REDIS_HOST, 
+    port=REDIS_PORT, 
+    password=REDIS_PASSWORD,  # Add this parameter
+    db=0, 
+    decode_responses=True
+)
 
 # Dependency function to inject Redis connection
 def get_redis():
