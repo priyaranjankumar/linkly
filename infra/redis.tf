@@ -5,7 +5,7 @@ resource "azurerm_redis_cache" "redis" {
   capacity                      = 0       # Required for Basic C0
   family                        = "C"     # C = Basic/Standard, P = Premium
   sku_name                      = "Basic" # Lowest cost, non-SLA, single node
-  non_ssl_port_enabled          = false
+  non_ssl_port_enabled          = true
   public_network_access_enabled = true # Allow public access (needed for AKS without Private Link/VNet)
 
   # Basic tier specific settings

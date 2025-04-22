@@ -69,7 +69,8 @@ resource "azurerm_key_vault_secret" "redis_host" {
 
 resource "azurerm_key_vault_secret" "redis_port" {
   name         = "redis-port"
-  value        = tostring(azurerm_redis_cache.redis.ssl_port) # Use SSL port
+  #value        = tostring(azurerm_redis_cache.redis.ssl_port) # Use SSL port
+  value        = tostring(azurerm_redis_cache.redis.port) # Use SSL port
   key_vault_id = azurerm_key_vault.kv.id
   depends_on   = [azurerm_redis_cache.redis]
 }

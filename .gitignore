@@ -16,3 +16,5 @@ infra/.terraform.lock.hcl
 # Ignore any terraform provider binaries regardless of location
 **/terraform-provider-*.exe
 **/terraform-provider-*_v*
+infra/.terraform.*
+infra/myplan*
