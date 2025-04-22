@@ -54,11 +54,13 @@ async def lifespan(app: FastAPI):
         except Exception as e_db:
             logger.error(f"CRITICAL: Error during initial 'create_all': {e_db}", exc_info=True)
 
-        logger.info("Attempting to connect to Redis and PING...")
+        logger.info("Attempting to connect to Redis and PING... ")
+        logger.info("Redis host name is: %s", os.getenv("REDIS_HOST"))
+        logger.info("Redis port is: %s", os.getenv("REDIS_PORT"))
         redis_conn_check = None
         if redis_pool:
             try:
-                redis_conn_check = redis.Redis(connection_pool=redis_pool,socket_timeout=5.0, socket_connect_timeout=5.0)
+                redis_conn_check = redis.Redis(connection_pool=redis_pool,socket_timeout=10.0, socket_connect_timeout=10.0)
                 ping_response = redis_conn_check.ping()
                 if ping_response:
                     logger.info("Redis PING successful, connection is healthy")

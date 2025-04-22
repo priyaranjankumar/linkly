@@ -6,7 +6,7 @@ load_dotenv()
 
 REDIS_HOST = os.getenv("REDIS_HOST", "cache")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") # Add this line
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD,"password") # Add this line
 
 # Update connection pool to include password
 redis_pool = redis.ConnectionPool(
